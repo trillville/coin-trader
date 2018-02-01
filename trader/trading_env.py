@@ -28,7 +28,7 @@ class TradingEnv(Environment):
 
         self._actions = dict(
                 action=dict(type='int', shape=(), num_actions=3), # buy BTC/sell BTC/hold (do nothing)
-                amount=dict(type='float', shape=(), min_value=0.01, max_value=0.1)) # trade size
+                amount=dict(type='float', shape=(), min_value=MIN_TRADE, max_value=MAX_TRADE)) # trade size
 
         self._states = dict(
             env=dict(type='float', shape=self.data),  # environment states (independent of agent behavior)
