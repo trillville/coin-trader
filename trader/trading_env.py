@@ -1,4 +1,5 @@
 from random import random
+from box import Box
 import pandas as pd
 import numpy as np
 
@@ -8,17 +9,29 @@ from tensorforce.environments import Environment
 
 class TradingEnv(Environment):
 
-    def __init__(self, specification):
+    def __init__(self, data):
         """
         Skeleton of the GDAX trading env
         """
-        self.actions_ = dict(
-                action=dict(type='int', shape=(), num_actions=3), #buy BTC/sell BTC/hold (do nothing)
-                amount=dict(type='float', shape=(), min_value=self.min_trade, max_value=max_trade)) #trade size
+        self.data = data # pandas dataframe (currently read from CSV)
+        self.start_timestep = data['open_time'].min()
 
-        self.states_ = dict(
-            timeseries=dict(type='float', shape=self.train_data),  # time dependent features
-            stationary=dict(type='float', shape=2)  # btc/eth holdings
+        MIN_TRADE = 0.01
+        MAX_TRADE = 0.1
+
+        self.START_ETH = 10.0
+        self.START_BTC = 1.0
+        self.FEE = 0.003
+
+        self.step = 0
+
+        self._actions = dict(
+                action=dict(type='int', shape=(), num_actions=3), # buy BTC/sell BTC/hold (do nothing)
+                amount=dict(type='float', shape=(), min_value=0.01, max_value=0.1)) # trade size
+
+        self._states = dict(
+            env=dict(type='float', shape=self.data),  # environment states (independent of agent behavior)
+            stationary=dict(type='float', shape=3)  # agent states (dependent on agent behavior) [eth, btc, repeats]
         )
 
     def __str__(self):
@@ -27,39 +40,60 @@ class TradingEnv(Environment):
     def close(self):
         pass
 
+    def seed(self, seed=None):
+        random.seed(seed)
+        np.random.seed(seed)
+
     def reset(self):
-        self.state = {action_type: (1.0, 0.0) for action_type in self.specification}
-        if self.single_state_action:
-            return next(iter(self.state.values()))
-        else:
-            return dict(self.state)
+        self.step = 0
+        return self._get_next_state(self.start_timestep, self.START_ETH, self.START_BTC)
+
+    def _get_next_state(self, i, eth, btc):
+        timeseries = self.data.iloc[i]
+        stationary = [eth, btc]
+        return dict(series=timeseries, stationary=stationary)
+
+    def _calc_delta(self, column):
+        diff = self.data[column].pct_change()
+        diff.iloc[0] = 0  # get rid of nan
+        return diff[self.step]
 
     def execute(self, actions):
-        if self.single_state_action:
-            actions = {next(iter(self.specification)): actions}
+        signal = {
+            0: -1,  # make amount negative
+            1: 0,  # hold
+            2: 1  # make amount positive
+        }[actions['action']] * actions['amount']
+        if not signal: signal = 0
+        abs_sig = abs(signal)
 
-        reward = 0.0
-        for action_type, shape in self.specification.items():
-            if action_type == 'bool' or action_type == 'int':
-                correct = np.sum(actions[action_type])
-                overall = util.prod(shape)
-                self.state[action_type] = ((overall - correct) / overall, correct / overall)
-            elif action_type == 'float' or action_type == 'bounded':
-                step = np.sum(actions[action_type]) / util.prod(shape)
-                self.state[action_type] = max(self.state[action_type][0] - step, 0.0), min(self.state[action_type][1] + step, 1.0)
-            reward += max(min(self.state[action_type][1], 1.0), 0.0)
+        reward = 0 # initialize reward
+        last_eth, last_btc = self._states['stationary'] # initialize last/curr eth/btc values
+        last_price = self.data['open'][self.step] # initialize price
+        last_btc_value = last_btc + last_eth / last_price
 
-        terminal = random() < 0.25
-        if self.single_state_action:
-            return next(iter(self.state.values())), terminal, reward
-        else:
-            reward = reward / len(self.specification)
-            return dict(self.state), terminal, reward
+        if signal > 0 and not (abs_sig > last_eth):
+            curr_btc = last_btc + abs_sig - (abs_sig * fee)
+            curr_eth = last_eth - abs_sig / last_price
+        elif signal < 0 and not (abs_sig > last_btc):
+            new_btc = last_btc - abs_sig
+            new_eth = last_eth + (abs_sig - abs_sig * fee) / last_price
+
+        # now increment time
+        self.step += 1
+        curr_price = self.data['open'][self.step]
+        curr_btc_value = curr_btc + curr_eth / curr_price # value of action
+        hold_btc_value = last_btc + last_eth / curr_price # value of doing nothing
+
+        action_reward = curr_btc_value - last_btc_value # reward of action
+        hold_reward = hold_btc_value - last_btc_value # reward of doing nothing
+
+        return action_reward, hold_reward
 
     @property
     def states(self):
-        return self.states_
+        return self._states
 
     @property
     def actions(self):
-        return self.actions_
+        return self._actions
