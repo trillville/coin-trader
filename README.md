@@ -1,5 +1,10 @@
 # Coin Trader
-Some helpful reference documents: 
+Coin trading using reinforcement learning!
+
+## Agent and Model overview
+Environment <-> Runner <-> Agent <-> Model
+
+## Some helpful reference documents: 
 - [minimal test environment](https://github.com/reinforceio/tensorforce/blob/master/tensorforce/environments/minimal_test.py)
 - [TensorForce blog](https://reinforce.io/blog/introduction-to-tensorforce/)
 - [TensorForce manual](https://media.readthedocs.org/pdf/tensorforce/latest/tensorforce.pdf)
