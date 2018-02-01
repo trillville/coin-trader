@@ -95,6 +95,7 @@ class TradingEnv(Environment):
         else:
             repeats = 1
 
+        # also clunky using a global var...
         self.last_signal = signal
 
         # this step has to be after the time increment!
