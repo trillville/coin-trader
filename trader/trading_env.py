@@ -32,7 +32,7 @@ class TradingEnv(Environment):
 
         self._states = dict(
             env=dict(type='float', shape=self.data),  # environment states (independent of agent behavior)
-            stationary=dict(type='float', shape=3)  # agent states (dependent on agent behavior) [eth, btc, repeats]
+            agent=dict(type='float', shape=3)  # agent states (dependent on agent behavior) [eth, btc, repeats]
         )
 
     def __str__(self):
@@ -50,9 +50,9 @@ class TradingEnv(Environment):
         return self._get_next_state(self.START_ETH, self.START_BTC)
 
     def _get_next_state(self, eth, btc):
-        timeseries = self.data.iloc[self.step]
-        stationary = [eth, btc]
-        return dict(series=timeseries, stationary=stationary)
+        env = self.data.iloc[self.step]
+        agent = [eth, btc]
+        return dict(series=env, stationary=agent)
 
     def _calc_delta(self, column):
         diff = self.data[column].pct_change()
@@ -69,7 +69,7 @@ class TradingEnv(Environment):
         abs_sig = abs(signal)
 
         reward = 0 # initialize reward
-        last_eth, last_btc, repeats = self._states['stationary'] # initialize last/curr eth/btc values and number of repeated actions
+        last_eth, last_btc, repeats = self._states['agent'] # initialize last/curr eth/btc values and number of repeated actions
         last_price = self.data['open'][self.step] # initialize price
         last_btc_value = last_btc + last_eth / last_price
 
