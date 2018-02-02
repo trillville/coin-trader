@@ -47,7 +47,7 @@ def main(args):
                 stationary = x['agent']
                 x = series
 
-                apply_stationary_here = 2
+                apply_stationary_here = 1
                 internal_outputs = list()
                 index = 0
 

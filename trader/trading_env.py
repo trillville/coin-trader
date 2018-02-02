@@ -16,8 +16,8 @@ class TradingEnv(Environment):
         self.data[:,0] = self.data[:,0] - self.data[:,0].min()
         self.data[:,0] = self.data[:,0] / self.data[:,0].max()
 
-        self.data[:,6] = self.data[:,6] - self.data[:,6].min()
-        self.data[:,6] = self.data[:,6] / self.data[:,6].max()
+        # self.data[:,6] = self.data[:,6] - self.data[:,6].min()
+        # self.data[:,6] = self.data[:,6] / self.data[:,6].max()
 
         MIN_TRADE = 0.01
         MAX_TRADE = 0.1
@@ -87,7 +87,7 @@ class TradingEnv(Environment):
         # initialize last/curr eth/btc values and number of repeated actions
         last_eth, last_btc, last_signal = self.acc['eth'], self.acc['btc'], self.acc['signal']
         last_price = self.data[self.acc['step'],1] # initialize price
-        last_btc_value = last_btc + last_eth / last_price
+        last_btc_value = last_btc + last_eth * last_price
 
         if signal > 0 and not abs_sig > last_eth:
             self.acc['btc'] = last_btc + abs_sig - (abs_sig * self.FEE)
@@ -103,7 +103,7 @@ class TradingEnv(Environment):
         curr_price = self.data[self.acc['step'],1]
 
         # not sure if this is the best comparison... could also compare to reward of holding
-        curr_btc_value = self.acc['btc'] + self.acc['eth'] / curr_price
+        curr_btc_value = self.acc['btc'] + self.acc['eth'] * curr_price
         reward = curr_btc_value - last_btc_value
 
         # Collect repeated same-action count (homogeneous actions punished below)
