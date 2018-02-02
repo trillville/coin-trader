@@ -11,7 +11,13 @@ class TradingEnv(Environment):
     """
     def __init__(self, data):
         self.data = data # pandas dataframe (currently read from CSV)
-        self.start_timestep = data['open_time'].min()
+
+        # normalize TS data
+        self.data[:,0] = self.data[:,0] - self.data[:,0].min()
+        self.data[:,0] = self.data[:,0] / self.data[:,0].max()
+
+        self.data[:,6] = self.data[:,6] - self.data[:,6].min()
+        self.data[:,6] = self.data[:,6] / self.data[:,6].max()
 
         MIN_TRADE = 0.01
         MAX_TRADE = 0.1
@@ -21,16 +27,22 @@ class TradingEnv(Environment):
         self.FEE = 0.003 # exchange fee
         self.MAX_HOLD_LENGTH = 500 # punish if we don't do anything for 500 consecutive timesteps
 
-        self.step = 0
-        self.last_signal = 0
-
         self._actions = dict(
             action=dict(type='int', shape=(), num_actions=3), # buy BTC/sell BTC/hold (do nothing)
-            amount=dict(type='float', shape=(), min_value=MIN_TRADE, max_value=MAX_TRADE))
+            amount=dict(type='float', shape=(), min_value=MIN_TRADE, max_value=MAX_TRADE)
+        )
 
         self._states = dict(
-            env=dict(type='float', shape=self.data),  # environment states
-            agent=dict(type='float', shape=3)  # agent states [eth, btc, repeats]
+            env=dict(type='float', shape=self.data.shape[1]),  # environment states
+            agent=dict(type='float', shape=4)  # agent states [eth, btc, repeats, last signal]
+        )
+
+        self.acc = dict(
+            step=0,
+            eth=self.START_ETH,
+            btc=self.START_BTC,
+            repeats=0,
+            signal=0
         )
 
     def __str__(self):
@@ -44,19 +56,21 @@ class TradingEnv(Environment):
         np.random.seed(seed)
 
     def reset(self):
-        self.step = 0
-        self.last_signal = 0
-        return self._get_next_state(self.START_ETH, self.START_BTC)
+        self.acc = dict(
+            step=0,
+            eth=self.START_ETH,
+            btc=self.START_BTC,
+            repeats=0,
+            signal=0
+        )
 
-    def _get_next_state(self, eth, btc):
-        env = self.data.iloc[self.step]
-        agent = [eth, btc]
-        return dict(series=env, stationary=agent)
+        return self._get_next_state(self.START_ETH, self.START_BTC, 0, 0)
 
-    def _calc_delta(self, column):
-        diff = self.data[column].pct_change()
-        diff.iloc[0] = 0  # get rid of nan
-        return diff[self.step]
+    def _get_next_state(self, eth, btc, repeats, signal):
+        env = self.data[self.acc['step'],:].tolist()
+        agent = [eth, btc, repeats, signal]
+
+        return dict(env=env, agent=agent)
 
     def execute(self, actions):
         signal = {
@@ -71,9 +85,11 @@ class TradingEnv(Environment):
         reward = 0 # initialize reward
 
         # initialize last/curr eth/btc values and number of repeated actions
-        last_eth, last_btc, repeats = self._states['agent']
-        last_price = self.data['open'][self.step] # initialize price
+        last_eth, last_btc, repeats, signal = self.acc['eth'], self.acc['btc'], self.acc['repeats'], self.acc['signal']
+        last_price = self.data[self.acc['step'],1] # initialize price
         last_btc_value = last_btc + last_eth / last_price
+
+        curr_btc, curr_eth = last_btc, last_eth
 
         if signal > 0 and not abs_sig > last_eth:
             curr_btc = last_btc + abs_sig - (abs_sig * self.FEE)
@@ -83,25 +99,24 @@ class TradingEnv(Environment):
             curr_eth = last_eth + (abs_sig - abs_sig * self.FEE) / last_price
 
         # now increment time (probably a better way to do this without using a global var...)
-        self.step += 1
-        curr_price = self.data['open'][self.step]
+        self.acc['step'] += 1
+
+        curr_price = self.data[self.acc['step'],1]
 
         # not sure if this is the best comparison... could also compare to reward of holding
         reward = (curr_btc + curr_eth / curr_price) - last_btc_value
 
         # Collect repeated same-action count (homogeneous actions punished below)
-        if signal == self.last_signal:
+        if signal == self.acc['signal']: # no change in signal
             repeats += 1
         else:
             repeats = 1
 
-        # also clunky using a global var...
-        self.last_signal = signal
-
         # this step has to be after the time increment!
-        next_state = self._get_next_state(curr_eth, curr_btc)
+        next_state = self._get_next_state(curr_eth, curr_btc, repeats, signal)
+        self.acc['signal'] = signal
 
-        terminal = self.step >= len(self.data)
+        terminal = self.acc['step'] >= len(self.data) - 1
         if repeats >= self.MAX_HOLD_LENGTH:
             reward -= -1.0  # start trading u cuck
             terminal = True
