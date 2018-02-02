@@ -112,7 +112,7 @@ class TradingEnv(Environment):
             repeats = 1
 
         if self.acc['step'] % 100 == 0:
-            self.acc['step'] 
+            print("step: ", self.acc['step'], "eth: ", self.acc['eth'], "btc: ",self.acc['btc'], "reward:", reward, "repeats: ", repeats, "signal: ", signal)
 
         # this step has to be after the time increment!
         next_state = self._get_next_state(self.acc['eth'], self.acc['btc'], repeats, signal)
