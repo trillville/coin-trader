@@ -25,7 +25,7 @@ def main(args):
         arr = []
 
         for i in range(1,3):
-            size = 16
+            size = 32
             arr.append({'size': size, **dense})
 
         print(arr)
@@ -77,7 +77,7 @@ def main(args):
         states_spec=env.states,
         actions_spec=env.actions,
         network_spec=network,
-        batch_size=1000,
+        batch_size=500,
         # BatchAgent
         keep_last_timestep=True,
         # PPOAgent

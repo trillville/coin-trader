@@ -85,35 +85,37 @@ class TradingEnv(Environment):
         reward = 0 # initialize reward
 
         # initialize last/curr eth/btc values and number of repeated actions
-        last_eth, last_btc, repeats, signal = self.acc['eth'], self.acc['btc'], self.acc['repeats'], self.acc['signal']
+        last_eth, last_btc, repeats, last_signal = self.acc['eth'], self.acc['btc'], self.acc['repeats'], self.acc['signal']
         last_price = self.data[self.acc['step'],1] # initialize price
         last_btc_value = last_btc + last_eth / last_price
 
-        curr_btc, curr_eth = last_btc, last_eth
-
         if signal > 0 and not abs_sig > last_eth:
-            curr_btc = last_btc + abs_sig - (abs_sig * self.FEE)
-            curr_eth = last_eth - abs_sig / last_price
+            self.acc['btc'] = last_btc + abs_sig - (abs_sig * self.FEE)
+            self.acc['eth'] = last_eth - abs_sig / last_price
         elif signal < 0 and not abs_sig > last_btc:
-            curr_btc = last_btc - abs_sig
-            curr_eth = last_eth + (abs_sig - abs_sig * self.FEE) / last_price
+            self.acc['btc'] = last_btc - abs_sig
+            self.acc['eth'] = last_eth + (abs_sig - abs_sig * self.FEE) / last_price
 
         # now increment time (probably a better way to do this without using a global var...)
         self.acc['step'] += 1
+        self.acc['signal'] = signal
 
         curr_price = self.data[self.acc['step'],1]
 
         # not sure if this is the best comparison... could also compare to reward of holding
-        reward = (curr_btc + curr_eth / curr_price) - last_btc_value
+        reward = (self.acc['btc'] + self.acc['eth'] / curr_price) - last_btc_value
 
         # Collect repeated same-action count (homogeneous actions punished below)
-        if signal == self.acc['signal']: # no change in signal
+        if signal == last_signal: # no change in signal
             repeats += 1
         else:
             repeats = 1
 
+        if self.acc['step'] % 100 == 0:
+            self.acc['step'] 
+
         # this step has to be after the time increment!
-        next_state = self._get_next_state(curr_eth, curr_btc, repeats, signal)
+        next_state = self._get_next_state(self.acc['eth'], self.acc['btc'], repeats, signal)
         self.acc['signal'] = signal
 
         terminal = self.acc['step'] >= len(self.data) - 1
