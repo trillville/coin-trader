@@ -85,7 +85,7 @@ class TradingEnv(Environment):
         reward = 0 # initialize reward
 
         # initialize last/curr eth/btc values and number of repeated actions
-        last_eth, last_btc, repeats, last_signal = self.acc['eth'], self.acc['btc'], self.acc['repeats'], self.acc['signal']
+        last_eth, last_btc, last_signal = self.acc['eth'], self.acc['btc'], self.acc['signal']
         last_price = self.data[self.acc['step'],1] # initialize price
         last_btc_value = last_btc + last_eth / last_price
 
@@ -103,23 +103,24 @@ class TradingEnv(Environment):
         curr_price = self.data[self.acc['step'],1]
 
         # not sure if this is the best comparison... could also compare to reward of holding
-        reward = (self.acc['btc'] + self.acc['eth'] / curr_price) - last_btc_value
+        curr_btc_value = self.acc['btc'] + self.acc['eth'] / curr_price
+        reward = curr_btc_value - last_btc_value
 
         # Collect repeated same-action count (homogeneous actions punished below)
         if signal == last_signal: # no change in signal
-            repeats += 1
+            self.acc['repeats'] += 1
         else:
-            repeats = 1
+            self.acc['repeats'] = 1
 
         if self.acc['step'] % 100 == 0:
-            print("step: ", self.acc['step'], "eth: ", self.acc['eth'], "btc: ",self.acc['btc'], "reward:", reward, "repeats: ", repeats, "signal: ", signal)
+            print("step: ", self.acc['step'], "eth: ", self.acc['eth'], "btc: ",self.acc['btc'], "tot val: ", curr_btc_value, "reward:", reward, "repeats: ", self.acc['repeats'], "signal: ", signal)
 
         # this step has to be after the time increment!
-        next_state = self._get_next_state(self.acc['eth'], self.acc['btc'], repeats, signal)
+        next_state = self._get_next_state(self.acc['eth'], self.acc['btc'], self.acc['repeats'], signal)
         self.acc['signal'] = signal
 
         terminal = self.acc['step'] >= len(self.data) - 1
-        if repeats >= self.MAX_HOLD_LENGTH:
+        if self.acc['repeats'] >= self.MAX_HOLD_LENGTH:
             reward -= -1.0  # start trading u cuck
             terminal = True
 
