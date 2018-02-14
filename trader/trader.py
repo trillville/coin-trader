@@ -6,6 +6,7 @@ import json
 from argparse import ArgumentParser
 from tensorforce.agents import PPOAgent, RandomAgent
 from tensorforce.core.networks import LayeredNetwork
+from tensorforce.execution import Runner
 import tensorflow as tf
 
 def main(args):
@@ -115,7 +116,27 @@ def main(args):
             distributed_spec=None
         )
 
-    env.train_and_test(agent, num_runs = 5)
+    
+    runner = Runner(agent, env)
+    
+    report_episodes = 1
+
+    def episode_finished(r):
+        if r.episode % report_episodes == 0:
+            logging.info("Finished episode {ep} after {ts} timesteps".format(ep=r.episode, ts=r.timestep))
+            logging.info("Episode reward: {}".format(r.episode_rewards[-1]))
+            logging.info("Average of last 100 rewards: {}".format(sum(r.episode_rewards[-100:]) / 100))
+        return True
+
+    print("Starting {agent} for Environment '{env}'".format(agent=agent, env=env))
+
+    max_episodes = 10000
+    max_timesteps = 1000
+
+    runner.run(max_episodes, max_timesteps, episode_finished=episode_finished)
+    runner.close()
+
+    print("Learning finished. Total episodes: {ep}".format(ep=runner.episode))
     agent.close()
     env.close()
 

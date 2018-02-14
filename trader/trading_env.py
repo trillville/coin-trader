@@ -13,7 +13,12 @@ class TradingEnv(Environment):
     Skeleton of the GDAX trading env
     """
     def __init__(self, data, params):
-        self.data = data # pandas dataframe (currently read from CSV)
+        
+        # TODO: FIX THESE THREE LINES
+        self.run_data = data # pandas dataframe (currently read from CSV)
+        self.data = self.run_data
+        self.price_pct_changes = self._get_diff(self.data[:,2], True)
+
         self.params = params
 
         # normalize TS data
@@ -194,18 +199,18 @@ class TradingEnv(Environment):
                 self.run_data = train[start_index:start_index + run_length, ]
                 print("START INDEX: ", start_index)
                 runner.run(timesteps=self.run_data.shape[0], max_episode_timesteps=self.run_data.shape[0])
-                self.run_data = test
-                self.run_sim(runner)
+                #self.run_data = test
+                #self.run_sim(runner)
                 #self.run_data = test
                 #runner.run(timesteps=test.shape[0], max_episode_timesteps=test.shape[0])
                 #self.run_sim(runner, print_results=True)
                 i += 1
                 start_index += run_length
-                print(i)
+                #print(i)
                 #self.run_sim(runner, print_results=True)
         except KeyboardInterrupt:
             self.run_data = test
-            runner.run(max_episode_timesteps=test.shape[0])
+            #runner.run(max_episode_timesteps=test.shape[0])
             # Lets us kill training with Ctrl-C and skip straight to the final test. This is useful in case you're
             # keeping an eye on terminal and see "there! right there, stop you found it!" (where early_stop & n_steps
             # are the more musdodical approaches)
