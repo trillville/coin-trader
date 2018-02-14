@@ -127,8 +127,8 @@ class TradingEnv(Environment):
 
         # Treating a buy and hold strategy as the baseline
         pct_change = self.price_pct_changes[step_acc['i']]
-        if pct_change > 0:
-            pdb.set_trace()
+        # if pct_change > 0:
+            # pdb.set_trace()
         step_acc['btc'] += pct_change * step_acc['btc']
         total = step_acc['usd'] + step_acc['btc']
         step_acc['val'] = total

@@ -128,7 +128,7 @@ def main(args):
             print("Finished episode {ep} after {ts} timesteps".format(ep=r.episode, ts=r.timestep))
             print("Episode reward: {}".format(r.episode_rewards[-1]))
             print("Average of last 100 rewards: {}".format(sum(r.episode_rewards[-100:]) / 100))
-            print("Current state information: ", r.environment.acc)
+            print("Current state information: ", r.environment.acc['step']['val'])
         return True
 
     print("Starting {agent} for Environment '{env}'".format(agent=agent, env=env))
