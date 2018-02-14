@@ -4,6 +4,7 @@ import numpy as np
 from collections import Counter
 from math import floor, ceil
 import time
+import pdb
 
 from tensorforce.environments import Environment
 from tensorforce.execution import Runner
@@ -13,7 +14,7 @@ class TradingEnv(Environment):
     Skeleton of the GDAX trading env
     """
     def __init__(self, data, params):
-        
+
         # TODO: FIX THESE THREE LINES
         self.run_data = data # pandas dataframe (currently read from CSV)
         self.data = self.run_data
@@ -96,6 +97,7 @@ class TradingEnv(Environment):
         return dict(env=env, agent=agent)
 
     def execute(self, actions):
+        pdb.set_trace()
         if self.params['single_action']:
             signal = 0 if -self.MIN_TRADE < actions < self.MIN_TRADE else actions
         else:
@@ -153,29 +155,7 @@ class TradingEnv(Environment):
             reward -= -1.0  # start trading u cuck
             terminal = True
 
-        if terminal is True:
-            self.episode_finished()
-
         return next_state, terminal, reward
-
-    def episode_finished(self):
-        step_acc, ep_acc = self.acc['step'], self.acc['episode']
-        signals = step_acc['signals']
-
-        advantage = (step_acc['btc'] + step_acc['usd']) - (self.hold['btc'])
-
-        ep_acc['advantages'].append(advantage)
-        n_uniques = float(len(np.unique(signals)))
-        ep_acc['uniques'].append(n_uniques)
-
-        # Print (limit to note-worthy)
-        common = dict((round(k,2), v) for k, v in Counter(signals).most_common(5))
-        completion = f"|{int(ep_acc['num_steps'] / self.run_data.shape[0] * 100)}%"
-        print("hold BTC: ", self.hold['btc'], " trader value: ", step_acc['btc'] + step_acc['usd'])
-
-        print(f"{ep_acc['i']}|⌛:{step_acc['i']}{completion}\tA:{'%.3f'%advantage}\t{common}({n_uniques}uniq)")
-
-        return True
 
     ## TODO: setup the run_sim and train_and_test functions. goal -> iterate through the dataset, making num_tests number of unique datasets
     ## for each dataset, do a train/test exercise and calculate/log the advantage
