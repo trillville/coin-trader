@@ -113,7 +113,7 @@ class TradingEnv(Environment):
         step_acc, ep_acc = self.acc['step'], self.acc['episode']
 
         # initialize last/curr usd/btc values and number of repeated actions
-        last_usd, last_btc, last_signal = step_acc['usd'], step_acc['btc'], 0 or step_acc['signals'][-1]
+        last_usd, last_btc, last_signal = step_acc['usd'], step_acc['btc'], (step_acc['signals'] or [None])[-1]
 
         if signal > 0 and not abs_sig > last_usd:
             step_acc['btc'] += (1.0 - self.FEE) * abs_sig
