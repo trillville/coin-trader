@@ -3,7 +3,9 @@
 from setuptools import setup, find_packages
 
 install_requires = [
-    'gdax==1.0.6'
+    'gdax==1.0.6',
+    'tensorforce==0.3.5.1',
+    'pandas==0.22.0'
 ]
 
 setup(
