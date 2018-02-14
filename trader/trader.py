@@ -7,7 +7,9 @@ from argparse import ArgumentParser
 from tensorforce.agents import PPOAgent, RandomAgent
 from tensorforce.core.networks import LayeredNetwork
 from tensorforce.execution import Runner
+
 import tensorflow as tf
+import logging
 
 def main(args):
     def build_net_spec():
@@ -123,9 +125,10 @@ def main(args):
 
     def episode_finished(r):
         if r.episode % report_episodes == 0:
-            logging.info("Finished episode {ep} after {ts} timesteps".format(ep=r.episode, ts=r.timestep))
-            logging.info("Episode reward: {}".format(r.episode_rewards[-1]))
-            logging.info("Average of last 100 rewards: {}".format(sum(r.episode_rewards[-100:]) / 100))
+            print("Finished episode {ep} after {ts} timesteps".format(ep=r.episode, ts=r.timestep))
+            print("Episode reward: {}".format(r.episode_rewards[-1]))
+            print("Average of last 100 rewards: {}".format(sum(r.episode_rewards[-100:]) / 100))
+            print("Current state information: ", r.environment.acc)
         return True
 
     print("Starting {agent} for Environment '{env}'".format(agent=agent, env=env))
@@ -143,7 +146,7 @@ def main(args):
 def make_parser():
     parser = ArgumentParser()
     parser.add_argument('-d', '--data_path', dest='data_path',
-                        required=False, default="/Users/tillmanelser/crypto/trading/coin-bot/sample_data/BTC_DATA.csv")
+                        required=False, default="/Users/tillmanelser/crypto/trading/coin-bot/sample_data/BTC_Med.csv")
     parser.add_argument('-n', '--network_spec', dest='network_spec',
                         required=False, default="/Users/tillmanelser/crypto/trading/coin-bot/trader/network_spec.json")
     return parser

@@ -84,7 +84,7 @@ class TradingEnv(Environment):
         ep_acc, step_acc = self.acc['episode'], self.acc['step']
         step_acc['usd'], step_acc['btc'] = self.START_USD, self.START_BTC
         step_acc['i'] = 0
-        step_acc['signal'] = [0] * self.run_data.shape[1]
+        step_acc['signals'] = []
         step_acc['repeats'] = 0
         ep_acc['i'] += 1
 
@@ -114,7 +114,7 @@ class TradingEnv(Environment):
         step_acc, ep_acc = self.acc['step'], self.acc['episode']
 
         # initialize last/curr usd/btc values and number of repeated actions
-        last_usd, last_btc, last_signal = step_acc['usd'], step_acc['btc'], step_acc['signal']
+        last_usd, last_btc, last_signal = step_acc['usd'], step_acc['btc'], step_acc['signals'][-1]
 
         if signal > 0 and not abs_sig > last_usd:
             step_acc['btc'] += (1.0 - self.FEE) * abs_sig
@@ -130,6 +130,7 @@ class TradingEnv(Environment):
         pct_change = self.price_pct_changes[step_acc['i']]
         step_acc['btc'] += pct_change * step_acc['btc']
         total = step_acc['usd'] + step_acc['btc']
+        step_acc['val'] = total
 
         # see how the buy and hold strategy would have done
         hold = self.hold
@@ -148,7 +149,7 @@ class TradingEnv(Environment):
 
         # this step has to be after the time increment!
         next_state = self._get_next_state(step_acc['usd'], step_acc['btc'], step_acc['repeats'], signal)
-        step_acc['signal'] = signal
+        step_acc['signals'].append(signal)
 
         terminal = step_acc['i'] >= len(self.run_data) - 1
         if step_acc['repeats'] >= self.MAX_HOLD_LENGTH:
