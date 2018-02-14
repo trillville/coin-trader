@@ -97,7 +97,6 @@ class TradingEnv(Environment):
         return dict(env=env, agent=agent)
 
     def execute(self, actions):
-        pdb.set_trace()
         if self.params['single_action']:
             signal = 0 if -self.MIN_TRADE < actions < self.MIN_TRADE else actions
         else:
@@ -114,7 +113,7 @@ class TradingEnv(Environment):
         step_acc, ep_acc = self.acc['step'], self.acc['episode']
 
         # initialize last/curr usd/btc values and number of repeated actions
-        last_usd, last_btc, last_signal = step_acc['usd'], step_acc['btc'], step_acc['signals'][-1]
+        last_usd, last_btc, last_signal = step_acc['usd'], step_acc['btc'], 0 or step_acc['signals'][-1]
 
         if signal > 0 and not abs_sig > last_usd:
             step_acc['btc'] += (1.0 - self.FEE) * abs_sig
@@ -128,6 +127,8 @@ class TradingEnv(Environment):
 
         # Treating a buy and hold strategy as the baseline
         pct_change = self.price_pct_changes[step_acc['i']]
+        if pct_change > 0:
+            pdb.set_trace()
         step_acc['btc'] += pct_change * step_acc['btc']
         total = step_acc['usd'] + step_acc['btc']
         step_acc['val'] = total

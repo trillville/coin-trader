@@ -100,27 +100,27 @@ def main(args):
                 type='adam',
                 learning_rate=3e-4
             ),
-            optimization_steps=10, 
+            optimization_steps=10,
             # Model
-            scope='ppo', 
+            scope='ppo',
             discount=0.95,
             # DistributionModel
-            distributions_spec=None, 
+            distributions_spec=None,
             entropy_regularization=0.01,
             # PGModel
-            baseline_mode=None, 
-            baseline=None, 
-            baseline_optimizer=None, 
+            baseline_mode=None,
+            baseline=None,
+            baseline_optimizer=None,
             gae_lambda=None,
-            # PGLRModel 
-            likelihood_ratio_clipping=0.2, 
-            summary_spec=None, 
+            # PGLRModel
+            likelihood_ratio_clipping=0.2,
+            summary_spec=None,
             distributed_spec=None
         )
 
-    
+
     runner = Runner(agent, env)
-    
+
     report_episodes = 1
 
     def episode_finished(r):
@@ -137,11 +137,8 @@ def main(args):
     max_timesteps = 1000
 
     runner.run(max_episodes, max_timesteps, episode_finished=episode_finished)
-    runner.close()
 
     print("Learning finished. Total episodes: {ep}".format(ep=runner.episode))
-    agent.close()
-    env.close()
 
 def make_parser():
     parser = ArgumentParser()
