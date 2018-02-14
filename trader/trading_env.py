@@ -203,10 +203,6 @@ class TradingEnv(Environment):
         diff = series.pct_change() if percent else series.diff()
         diff.iloc[0] = 0  # always NaN, nothing to compare to
 
-        # Remove outliers (turn them to NaN)
-        q = diff.quantile(0.99)
-        diff = diff.mask(diff > q, np.nan)
-
         # then forward-fill the NaNs.
         return diff.replace([np.inf, -np.inf], np.nan).ffill().bfill().values
 
